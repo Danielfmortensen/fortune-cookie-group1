@@ -1,0 +1,32 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    restart: unless-stopped
+    environment:
+      - REDIS_DNS=redis
+    depends_on:
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - BACKEND_DNS=backend
+      - BACKEND_PORT=9000
+    depends_on:
+      - backend
+
+volumes:
+  redis-data:
