@@ -4,6 +4,9 @@ services:
     restart: unless-stopped
     volumes:
       - redis-data:/data
+  
+  app:
+    image: ghcr.io/danielfmortensen/fortune-cookie-group1:latest
 
   backend:
     build:
