@@ -29,10 +29,12 @@ spec:
               port: 8080
             initialDelaySeconds: 2
             periodSeconds: 5
-          env:
-            - name: BACKEND_DNS
-              value: backend
-            - name: BACKEND_PORT
-              value: "9000"
+        - name: frontend
+          image: ghcr.io/danielfmortensen/fortune-cookie-group1-frontend:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: frontend-config
       imagePullSecrets:
         - name: ghcr-secret
