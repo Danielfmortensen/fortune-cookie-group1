@@ -78,5 +78,9 @@ jobs:
 
       - name: Test Availability
         run: |
-          sleep 15
-          curl -f http://16.16.64.127:31810 || exit 1
+          kubectl --kubeconfig kubeconfig rollout status deployment/frontend
+          kubectl --kubeconfig kubeconfig port-forward svc/frontend 8080:8080 &
+          
+          sleep 5
+          
+          curl -f http://localhost:8080 || exit 1
