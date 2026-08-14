@@ -10,6 +10,9 @@ jobs:
     with:
       push_latest: true
     secrets: inherit
+    permissions:
+      contents: read
+      packages: write
 
   deployment:
     needs: build-and-test
