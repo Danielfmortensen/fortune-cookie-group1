@@ -1,0 +1,34 @@
+name: Pull Request Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build-and-test:
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      push_latest: false
+    secrets: inherit
+
+  deploy-preview:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Kubeconfig
+        run: echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+
+      - name: Inject PR Image Tags
+        run: sed -i "s|ghcr.io/${{ github.repository_owner }}/\(.*\):latest|ghcr.io/${{ github.repository_owner }}/\1:${{ github.sha }}|g" manifests-preview/*.yaml
+
+      - name: Deploy Static Preview Environment
+        run: kubectl --kubeconfig kubeconfig apply -f manifests-preview/
+
+      - name: Test Availability
+        run: |
+          kubectl --kubeconfig kubeconfig rollout status deployment/frontend-preview
+          kubectl --kubeconfig kubeconfig port-forward svc/frontend-preview 8080:8080 &
+          sleep 5
+          curl -f http://localhost:8080 || exit 1
