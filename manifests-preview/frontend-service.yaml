@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-preview
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend-preview
+  ports:
+    - port: 8080
+      targetPort: 8080

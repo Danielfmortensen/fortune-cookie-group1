@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-preview
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-preview
+  template:
+    metadata:
+      labels:
+        app: backend-preview
+    spec:
+      containers:
+        - name: backend-preview
+          image: ghcr.io/danielfmortensen/fortune-cookie-group1-backend:latest
+          ports:
+            - containerPort: 9000
+          env:
+            - name: REDIS_DNS
+              value: redis-preview
+      imagePullSecrets:
+        - name: ghcr-secret

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-preview
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-preview
+  template:
+    metadata:
+      labels:
+        app: redis-preview
+    spec:
+      containers:
+        - name: redis-preview
+          image: redis:latest
+          ports:
+            - containerPort: 6379

@@ -3,84 +3,22 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-env:
-  REGISTRY: ghcr.io
 
 jobs:
-  integration:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20'
-
-      - name: Build Frontend
-        working-directory: ./frontend
-        run: go build -v ./...
-
-      - name: Build Backend
-        working-directory: ./backend
-        run: go build -v ./...
-
-      - name: Test Frontend
-        working-directory: ./frontend
-        run: go test -v ./...
-
-  delivery:
-    needs: integration
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      matrix:
-        service: [backend, frontend]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set lower case image name
-        run: echo "IMAGE_NAME=$(echo ${{ github.repository }}-${{ matrix.service }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./${{ matrix.service }}
-          file: ./${{ matrix.service }}/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+  build-and-test:
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      push_latest: true
+    secrets: inherit
 
   deployment:
-    needs: delivery
+    needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Kubernetes
-        run: |
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
-          kubectl --kubeconfig kubeconfig apply -f manifests/
+      - name: Setup Kubeconfig
+        run: echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
 
-      - name: Test Availability
-        run: |
-          kubectl --kubeconfig kubeconfig rollout status deployment/frontend
-          kubectl --kubeconfig kubeconfig port-forward svc/frontend 8080:8080 &
-          
-          sleep 5
-          
-          curl -f http://localhost:8080 || exit 1
+      - name: Deploy to Production
+        run: kubectl --kubeconfig kubeconfig apply -f manifests/
