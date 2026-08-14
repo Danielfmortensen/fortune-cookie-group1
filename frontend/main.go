@@ -32,47 +32,56 @@ func HealthzHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "healthy")
 }
 
+func ApiAllHandler(w http.ResponseWriter, r *http.Request) {
+	resp, err := myClient.Get(fmt.Sprintf("http://%s:%s/fortunes", BACKEND_DNS, BACKEND_PORT))
+	if err != nil {
+		log.Println("Backend connection failed:", err)
+		http.Error(w, "Backend is currently unavailable", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	fortunes := new([]fortune)
+	if err := json.NewDecoder(resp.Body).Decode(fortunes); err != nil {
+		log.Println("JSON decode failed:", err)
+		http.Error(w, "Error reading data", http.StatusInternalServerError)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("./templates/fortunes.html")
+	if err != nil {
+		log.Println("Template parse failed:", err)
+		http.Error(w, "Error loading UI", http.StatusInternalServerError)
+		return
+	}
+
+	tmpl.Execute(w, fortunes)
+}
+
+func ApiRandomHandler(w http.ResponseWriter, r *http.Request) {
+	resp, err := myClient.Get(fmt.Sprintf("http://%s:%s/fortunes/random", BACKEND_DNS, BACKEND_PORT))
+	if err != nil {
+		log.Println("Backend connection failed:", err)
+		http.Error(w, "Backend is currently unavailable", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	f := new(fortune)
+	if err := json.NewDecoder(resp.Body).Decode(f); err != nil {
+		log.Println("JSON decode failed:", err)
+		http.Error(w, "Error reading data", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, f.Message)
+}
+
 func main() {
 
 	http.HandleFunc("/healthz", HealthzHandler)
-
-	http.HandleFunc("/api/random", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := myClient.Get(fmt.Sprintf("http://%s:%s/fortunes/random", BACKEND_DNS, BACKEND_PORT))
-		if err != nil {
-			log.Fatalln(err)
-			fmt.Fprint(w, err)
-			return
-		}
-
-		f := new(fortune)
-		json.NewDecoder(resp.Body).Decode(f)
-
-		fmt.Fprint(w, f.Message)
-		return
-	})
-
-	http.HandleFunc("/api/all", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := myClient.Get(fmt.Sprintf("http://%s:%s/fortunes", BACKEND_DNS, BACKEND_PORT))
-		if err != nil {
-			log.Fatalln(err)
-			fmt.Fprint(w, err)
-			return
-		}
-
-		fortunes := new([]fortune)
-		json.NewDecoder(resp.Body).Decode(fortunes)
-
-		tmpl, err := template.ParseFiles("./templates/fortunes.html")
-
-		if err != nil {
-			log.Fatalln(err)
-			fmt.Fprint(w, err)
-			return
-		}
-
-		tmpl.Execute(w, fortunes)
-		return
-	})
+	http.HandleFunc("/api/all", ApiAllHandler)
+	http.HandleFunc("/api/random", ApiRandomHandler)
 
 	http.HandleFunc("/api/add", func(w http.ResponseWriter, r *http.Request) {
 
@@ -89,7 +98,7 @@ func main() {
 
 		_, err := myClient.Post(postUrl, "application/json", bytes.NewBuffer(jsonStr))
 		if err != nil {
-			log.Fatalln(err)
+			log.Println(err)
 			fmt.Fprint(w, err)
 			return
 		}
