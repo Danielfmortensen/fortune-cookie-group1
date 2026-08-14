@@ -17,6 +17,18 @@ spec:
           image: ghcr.io/danielfmortensen/fortune-cookie-group1-backend:latest
           ports:
             - containerPort: 9000
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9000
+            initialDelaySeconds: 2
+            periodSeconds: 5
           env:
             - name: REDIS_DNS
               value: redis-preview

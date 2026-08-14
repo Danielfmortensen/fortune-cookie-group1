@@ -169,6 +169,11 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("not found"))
 }
 
+func healthzHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("healthy"))
+}
+
 func main() {
 	mux := http.NewServeMux()
 	fortuneH := &fortuneHandler{
@@ -176,7 +181,8 @@ func main() {
 	}
 	mux.Handle("/fortunes", fortuneH)
 	mux.Handle("/fortunes/", fortuneH)
+	mux.HandleFunc("/healthz", healthzHandler)
 
 	err := http.ListenAndServe(":9000", mux)
-    fmt.Println("%v", err)
+	fmt.Print(err)
 }
