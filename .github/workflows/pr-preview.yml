@@ -24,7 +24,9 @@ jobs:
         run: echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
 
       - name: Inject PR Image Tags
-        run: sed -i "s|ghcr.io/${{ github.repository_owner }}/\(.*\):latest|ghcr.io/${{ github.repository_owner }}/\1:${{ github.sha }}|gI" manifests-preview/*.yaml
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          sed -i "s|ghcr.io/$OWNER/\(.*\):latest|ghcr.io/$OWNER/\1:${{ github.sha }}|g" manifests-preview/*.yaml
 
       - name: Deploy Static Preview Environment
         run: kubectl --kubeconfig kubeconfig apply -f manifests-preview/
