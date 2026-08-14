@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-test:
-    uses: ./.github/workflows/build-and-test.yml
+    uses: ./.github/workflows/build-and-test-reusable.yml
     with:
       push_latest: false
     secrets: inherit
