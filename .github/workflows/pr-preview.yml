@@ -24,14 +24,17 @@ jobs:
         run: echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
 
       - name: Inject PR Image Tags
-        run: sed -i "s|ghcr.io/${{ github.repository_owner }}/\(.*\):latest|ghcr.io/${{ github.repository_owner }}/\1:${{ github.sha }}|g" manifests-preview/*.yaml
+        run: sed -i "s|ghcr.io/${{ github.repository_owner }}/\(.*\):latest|ghcr.io/${{ github.repository_owner }}/\1:${{ github.sha }}|gI" manifests-preview/*.yaml
 
       - name: Deploy Static Preview Environment
         run: kubectl --kubeconfig kubeconfig apply -f manifests-preview/
 
       - name: Test Availability
         run: |
+          kubectl --kubeconfig kubeconfig rollout status deployment/backend-preview
           kubectl --kubeconfig kubeconfig rollout status deployment/frontend-preview
           kubectl --kubeconfig kubeconfig port-forward svc/frontend-preview 8080:8080 &
           sleep 5
-          curl -f http://localhost:8080 || exit 1
+          
+          curl -X POST http://localhost:8080/api/add -d '{"message": "Pipeline automated test cookie"}' -H "Content-Type: application/json"
+          curl -s http://localhost:8080/api/all | grep "Pipeline automated test cookie" || exit 1
