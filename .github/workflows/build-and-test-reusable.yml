@@ -55,6 +55,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lint Dockerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.service }}/Dockerfile
+          failure-threshold: error
+
       - name: Determine image tags
         run: |
           if [ "${{ inputs.push_latest }}" = "true" ]; then
@@ -80,12 +86,6 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-
-      - name: Lint Dockerfiles
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: ./${{ matrix.service }}/Dockerfile
-          failure-threshold: error
 
       - name: Lint Kubernetes Manifests
         uses: docker://ghcr.io/yannh/kubeconform:latest
