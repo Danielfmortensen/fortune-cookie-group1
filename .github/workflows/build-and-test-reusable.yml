@@ -80,3 +80,15 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
+      - name: Lint Dockerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ./${{ matrix.service }}/Dockerfile
+          failure-threshold: error
+
+      - name: Lint Kubernetes Manifests
+        uses: yannh/kubeconform-action@v1
+        with:
+          kubernetes-version: '1.28.0'
+          target: 'manifests/ manifests-preview/'
