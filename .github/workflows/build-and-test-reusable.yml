@@ -88,7 +88,6 @@ jobs:
           failure-threshold: error
 
       - name: Lint Kubernetes Manifests
-        uses: yannh/kubeconform-action@v1
+        uses: docker://ghcr.io/yannh/kubeconform:latest
         with:
-          kubernetes-version: '1.28.0'
-          target: 'manifests/ manifests-preview/'
+          args: -summary -kubernetes-version 1.28.0 manifests/ manifests-preview/
