@@ -21,14 +21,14 @@ jobs:
         with:
           go-version: '1.20'
 
-      - name: Build and Test Frontend
-        working-directory: ./frontend
+      - name: Build and Test Backend
+        working-directory: ./backend
         run: |
           go build -v ./...
           go test -v ./...
 
-      - name: Build Backend
-        working-directory: ./backend
+      - name: Build and Test Frontend
+        working-directory: ./frontend
         run: |
           go build -v ./...
           go test -v ./...
@@ -55,6 +55,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lint Dockerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.service }}/Dockerfile
+          failure-threshold: error
+
       - name: Determine image tags
         run: |
           if [ "${{ inputs.push_latest }}" = "true" ]; then
@@ -80,3 +86,8 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
+      - name: Lint Kubernetes Manifests
+        uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          args: -summary -kubernetes-version 1.28.0 manifests/ manifests-preview/
